@@ -34,8 +34,8 @@ class Command(BaseCommand):
         """Create the location object ie station or city"""
         stations, cities = {row[0] for row in data}, {row[1] for row in data}
         locations = (
-            [models.Location(location=location, type_id='station') for location in stations] +
-            [models.Location(location=location, type_id='city') for location in cities]
+            [models.Location(name=station, type_id='station') for station in stations] +
+            [models.Location(name=city, type_id='city') for city in cities]
         )
         return models.Location.objects.bulk_create(locations)
 
