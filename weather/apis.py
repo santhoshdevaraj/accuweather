@@ -1,3 +1,5 @@
+from django.http import HttpResponseBadRequest
+
 from django_filters import rest_framework as rest_filters
 from rest_framework import viewsets, serializers
 
@@ -46,6 +48,11 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self, *args, **kwargs):
         return models.WeatherDetail.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        if 'city' not in request.query_params:
+            return HttpResponseBadRequest("API can support at most one city's weather data per request")
+        return super(WeatherDetailViewSet, self).list(request, *args, **kwargs)
 
 
 class LocationViewSet(viewsets.ModelViewSet):
