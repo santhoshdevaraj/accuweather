@@ -5,7 +5,7 @@ from django.db import models
 class WeatherDetail(models.Model):
     """Object for storing the daily weather data."""
     station = models.ForeignKey('Location', related_name='station_name')
-    name = models.ForeignKey('Location', related_name='city_name')
+    city = models.ForeignKey('Location', related_name='city_name')
     latitude = models.DecimalField(max_digits=10, decimal_places=6)
     longitude = models.DecimalField(max_digits=10, decimal_places=6)
     elevation = models.DecimalField(max_digits=10, decimal_places=4)

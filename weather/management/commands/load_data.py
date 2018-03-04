@@ -44,7 +44,7 @@ class Command(BaseCommand):
         """Create the weather detail object in the DB"""
         weather_detail = [
             models.WeatherDetail(
-                station_id=row[0], name_id=row[1], latitude=row[2], longitude=row[3], elevation=row[4],
+                station_id=row[0], city_id=row[1], latitude=row[2], longitude=row[3], elevation=row[4],
                 date=row[5], tmax=row[6] or None, tmin=row[7] or None
             ) for row in data
         ]

@@ -31,7 +31,7 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
     list:
         Return weather for all days between a range
     """
-    filter_fields = ('station', 'name')
+    filter_fields = ('station', 'city')
     serializer_class = WeatherDetailSerializer
     ordering_fields = '__all__'
     http_method_names = ['get', ]
