@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# C extensions
+*.so
+
+# Distribution / packaging
+lib/
+static/
+*.egg-info/
+
+# virtualenv
+venv/
+
+# Idea project settings
+.idea
+/checkpkgs
+/data/
+
+# sqlite DB
+db.sqlite3
