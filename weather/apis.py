@@ -27,10 +27,16 @@ class WeatherDetailSerializer(serializers.ModelSerializer):
 
 class WeatherDetailFilterSet(rest_filters.FilterSet):
     """Custom filterset for WeatherDetail"""
-    frequency = rest_filters.CharFilter(method='filter_frequency', help_text='daily or weekly or monthly')
+    FREQUENCY_CHOICES = (('daily', 'Daily'), ('weekly', 'Weekly'), ('monthly', 'Monthly'))
+    FORMAT_CHOICES = (('fahrenheit', 'Temperature in fahrenheit'), ('celsius', 'Temperature in celsius'))
+
+    frequency = rest_filters.ChoiceFilter(method='filter_frequency', choices=FREQUENCY_CHOICES,
+                                          help_text='daily/weekly/monthly. Default is daily')
     start_date = rest_filters.DateFilter(name='date', lookup_expr='gte', help_text='start date (e.g) 2017-06-24')
     end_date = rest_filters.DateFilter(name='date', lookup_expr='lte', help_text='end date (e.g) 2017-06-26')
     city = rest_filters.CharFilter(name='city', lookup_expr='exact', help_text='city name (e.g) BERKHOUT, NL')
+    temp_format = rest_filters.ChoiceFilter(method='filter_temp_format', choices=FORMAT_CHOICES,
+                                            help_text='fahrenheit/celsius. Default is fahrenheit')
 
     class Meta:
         model = models.WeatherDetail
@@ -39,6 +45,11 @@ class WeatherDetailFilterSet(rest_filters.FilterSet):
     @staticmethod
     def filter_frequency(queryset, name, value):
         """Returns queryset filtering based on the period selected."""
+        return queryset
+
+    @staticmethod
+    def filter_temp_format(queryset, name, value):
+        """Returns the queryset based on the format as fahrenheit or celsius"""
         return queryset
 
 
