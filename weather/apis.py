@@ -1,3 +1,4 @@
+from django_filters import rest_framework as rest_filters
 from rest_framework import viewsets, serializers
 
 from . import models
@@ -23,6 +24,16 @@ class LocationSerializer(serializers.ModelSerializer):
         return location_obj['name']
 
 
+class WeatherDetailFilterSet(rest_filters.FilterSet):
+    """Custom filterset for WeatherDetail"""
+    start_date = rest_filters.DateFilter(name='date', lookup_expr='gte')
+    end_date = rest_filters.DateFilter(name='date', lookup_expr='lte')
+
+    class Meta:
+        model = models.WeatherDetail
+        fields = ['station', 'city', 'start_date', 'end_date']
+
+
 class WeatherDetailViewSet(viewsets.ModelViewSet):
     """
     retrieve:
@@ -31,9 +42,10 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
     list:
         Return weather for all days between a range
     """
-    filter_fields = ('station', 'city')
+    filter_class = WeatherDetailFilterSet
     serializer_class = WeatherDetailSerializer
     ordering_fields = '__all__'
+    ordering = ('date',)
     http_method_names = ['get', ]
 
     def get_queryset(self, *args, **kwargs):
@@ -51,6 +63,7 @@ class LocationViewSet(viewsets.ModelViewSet):
     filter_fields = ('type', )
     serializer_class = LocationSerializer
     ordering_fields = '__all__'
+    ordering = ('name', )
     http_method_names = ['get', ]
 
     def get_queryset(self, *args, **kwargs):
