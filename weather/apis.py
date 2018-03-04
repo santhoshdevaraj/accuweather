@@ -20,7 +20,7 @@ class WeatherDetailSerializer(serializers.ModelSerializer):
     """Serializer for WeatherDetail model."""
 
     class Meta:
-        fields = ['id', 'date', 'tmax', 'tmin']
+        fields = ['id', 'city', 'date', 'tmax', 'tmin']
         model = models.WeatherDetail
 
     def to_representation(self, instance, *args, **kwargs):
@@ -28,6 +28,7 @@ class WeatherDetailSerializer(serializers.ModelSerializer):
         format = self.context['request'].query_params.get('temp_format', 'fahrenheit')
         if format == 'celsius': instance.tmax, instance.tmin = instance.tmax_in_celsius, instance.tmin_in_celsius
         return super(WeatherDetailSerializer, self).to_representation(instance, *args, **kwargs)
+
 
 class WeatherDetailFilterSet(rest_filters.FilterSet):
     """Custom filterset for WeatherDetail"""
@@ -66,7 +67,7 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
         Return data for a pk
 
     list:
-        Return weather for all days between a range
+        Return weather for all days between a range for a city
     """
     filter_class = WeatherDetailFilterSet
     serializer_class = WeatherDetailSerializer

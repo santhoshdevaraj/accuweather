@@ -16,12 +16,15 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 
-from . import swagger
+from rest_framework_swagger.views import get_swagger_view
 
 from weather import urls as api_urls
 
-urlpatterns = [
+urls_documented = [
     url(r'^admin/', admin.site.urls),
-    url(r'^api/schema/$', swagger.schema_view),
     url(r'^api/', include(api_urls.urlpatterns)),
 ]
+
+schema_view = get_swagger_view(title='Weather API documentation', patterns=urls_documented)
+
+urlpatterns = urls_documented + [url(r'^api/schema/$', schema_view)]
