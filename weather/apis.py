@@ -4,14 +4,6 @@ from rest_framework import viewsets, serializers
 from . import models
 
 
-class WeatherDetailSerializer(serializers.ModelSerializer):
-    """Serializer for WeatherDetail model."""
-
-    class Meta:
-        fields = '__all__'
-        model = models.WeatherDetail
-
-
 class LocationSerializer(serializers.ModelSerializer):
     """Serializer for WeatherDetail model."""
 
@@ -19,9 +11,13 @@ class LocationSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = models.Location
 
-    def to_representation(self, obj):
-        location_obj = super(LocationSerializer, self).to_representation(obj)
-        return location_obj['name']
+
+class WeatherDetailSerializer(serializers.ModelSerializer):
+    """Serializer for WeatherDetail model."""
+
+    class Meta:
+        fields = ['id', 'date', 'tmax', 'tmin']
+        model = models.WeatherDetail
 
 
 class WeatherDetailFilterSet(rest_filters.FilterSet):
@@ -31,7 +27,7 @@ class WeatherDetailFilterSet(rest_filters.FilterSet):
 
     class Meta:
         model = models.WeatherDetail
-        fields = ['station', 'city', 'start_date', 'end_date']
+        fields = ['city', 'start_date', 'end_date']
 
 
 class WeatherDetailViewSet(viewsets.ModelViewSet):
@@ -58,9 +54,8 @@ class LocationViewSet(viewsets.ModelViewSet):
         Return data for a pk
 
     list:
-        Return all stations and cities. Use 'type' filter to view 'station' or 'city' list.
+        Return list of cities with their data
     """
-    filter_fields = ('type', )
     serializer_class = LocationSerializer
     ordering_fields = '__all__'
     ordering = ('name', )

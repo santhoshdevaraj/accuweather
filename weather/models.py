@@ -4,7 +4,6 @@ from django.db import models
 
 class WeatherDetail(models.Model):
     """Object for storing the daily weather data."""
-    station = models.ForeignKey('Location', related_name='station_name')
     city = models.ForeignKey('Location', related_name='city_name')
     date = models.DateField()
     tmax = models.IntegerField(null=True)
@@ -12,15 +11,9 @@ class WeatherDetail(models.Model):
 
 
 class Location(models.Model):
-    """Object representing the various locations"""
+    """Object representing the various cities"""
     name = models.TextField(primary_key=True)
-    type = models.ForeignKey('LocationType')
-    latitude = models.DecimalField(max_digits=10, decimal_places=6, null=True)
-    longitude = models.DecimalField(max_digits=10, decimal_places=6, null=True)
-    elevation = models.DecimalField(max_digits=10, decimal_places=4, null=True)
-
-
-class LocationType(models.Model):
-    """Object representing the location category"""
-    TYPES = (('station', 'Weather Station'), ('city', 'City'))
-    type = models.CharField(primary_key=True, max_length=30, choices=TYPES)
+    station = models.CharField(max_length=20)
+    latitude = models.DecimalField(max_digits=10, decimal_places=6)
+    longitude = models.DecimalField(max_digits=10, decimal_places=6)
+    elevation = models.DecimalField(max_digits=10, decimal_places=4)
