@@ -16,10 +16,12 @@ class WeatherDetail(models.Model):
 
     @property
     def tmin_in_celsius(self):
+        """returns the tmin in celsius format"""
         return self.convert_fahrenheit_to_celsius(self.tmin)
 
     @property
     def tmax_in_celsius(self):
+        """returns the tmax in celsius format"""
         return self.convert_fahrenheit_to_celsius(self.tmax)
 
 
@@ -30,3 +32,6 @@ class Location(models.Model):
     latitude = models.DecimalField(max_digits=10, decimal_places=6)
     longitude = models.DecimalField(max_digits=10, decimal_places=6)
     elevation = models.DecimalField(max_digits=10, decimal_places=4)
+
+    def __str__(self):
+        return self.name

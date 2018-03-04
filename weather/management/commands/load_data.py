@@ -40,8 +40,8 @@ class Command(BaseCommand):
         return models.WeatherDetail.objects.bulk_create(weather_detail)
 
     def handle(self, *args, **options):
+        """Entry point for running the management command"""
         print("Starting csv file upload")
-
         file_path = options['file']
 
         with open(file_path, 'r') as csvfile:

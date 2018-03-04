@@ -9,7 +9,7 @@ from . import models
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    """Serializer for WeatherDetail model."""
+    """Serializer for Location model."""
 
     class Meta:
         fields = '__all__'
@@ -76,11 +76,19 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', ]
 
     def get_queryset(self, *args, **kwargs):
+        """
+        Returns rows from the model without filtering.
+        :return: queryset of WeatherDetail objects.
+        """
         return models.WeatherDetail.objects.all()
 
     @staticmethod
     def get_year_month_week(date_object):
-        """Given a date object returns the year, month and start of week"""
+        """
+        Given a date object returns the year, month and start of week
+        :param date_object: DateTime object
+        :return: Returns a tuple of (year e.g 2016, month e.g 'September', first day of week e.g '2016-09-29')
+        """
         return (
             date_object.year,
             date_object.strftime('%B'),
@@ -88,8 +96,14 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
         )
 
     @staticmethod
-    def get_data_map(data, data_map, frequency):
-        """Formats the data based on the input frequency passed"""
+    def create_data_map(data, data_map, frequency):
+        """
+        :param data: HttpResponse.data ie a list of maps of temperatures over days between a range
+        :param data_map: Defaultdict with (0, 0, 0, 0) as default value.
+        :param frequency: Frequency requested ie weekly or monthly.
+        :return: Map of (year, period) as key and (total_tmax, total_tmin, days_tmax, days_tmin) as value where period
+                is either monthly or weekly depending on frequency
+        """
         for row in data:
             current_date, tmax, tmin = row['date'], row['tmax'], row['tmin']
             year, month, week = WeatherDetailViewSet.get_year_month_week(datetime.strptime(current_date, '%Y-%m-%d'))
@@ -105,7 +119,14 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
         return data_map
 
     def get_response(self, data_map, frequency):
-        """Creates the response, based on the frequency requested"""
+        """
+        Creates the response, based on the frequency selected.
+        :param data_map: Map of (year, frequency) as key and (total_tmax, total_tmin, days_tmax, days_tmin) as value.
+        :param frequency: Frequency requested ie weekly or monthly.
+        :return: Computes the average of tmax and tmin for each period and returns a map of {year, period, avg_max,
+                avg_min}. (e.g) when frequency is 'monthly', {year: 2016, month: 'September', avg_max: 20,
+                avg_min: 30}. When frequency is 'weekly', {year: 2016, week: '2016-09-29', avg_max: 20, avg_min: 30}
+        """
         data = []
 
         for key in data_map:
@@ -120,17 +141,34 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
         return data
 
     def create_weekly_response(self, response, frequency):
-        """Updates the response with the year and week and average for that month"""
-        data_map = self.get_data_map(response.data, defaultdict(lambda: (0, 0, 0, 0)), frequency)
+        """
+        Updates the response with the year, week and average for that week.
+        :param response: HttpResponse object with temperature data given in daily format over the chosen range.
+        :param frequency: Frequency requested ie 'weekly'.
+        :return: A list of map of {year, period, avg_max, avg_min} for each period in the date range, where period
+                is the first day of each week for the date range.
+        """
+        data_map = self.create_data_map(response.data, defaultdict(lambda: (0, 0, 0, 0)), frequency)
         return self.get_response(data_map, frequency)
 
     def create_monthly_response(self, response, frequency):
-        """Updates the response with the year and month and average for that month"""
+        """
+        Updates the response with the year, month and average for that month.
+        :param response: HttpResponse object with temperature data given in daily format over the chosen range.
+        :param frequency: Frequency requested ie 'monthly'.
+        :return: A list of map of {year, period, avg_max, avg_min} for each period in the date range, where period
+                is each month for the date range.
+        """
         data_map = self.get_data_map(response.data, defaultdict(lambda : (0, 0, 0, 0)), frequency)
         return self.get_response(data_map, frequency)
 
     def update_for_frequency(self, response, request):
-        """Based on the frequency passed updates the API response accordingly"""
+        """
+        Based on the frequency passed updates the API response accordingly.
+        :param response: HttpResponse object with temperature data given in daily format over the chosen range.
+        :param request: HttpRequest object from the client.
+        :return: HttpResponse object with temperature data averaged based on the frequency in incoming request.
+        """
         frequency = request.query_params.get('frequency', None)
         if frequency == 'weekly':
             return self.create_weekly_response(response, 'week')
@@ -139,6 +177,12 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
         return response.data
 
     def list(self, request, *args, **kwargs):
+        """
+        Returns a list of temperature objects for a given city.
+        :param request: HttpRequest object.
+        :return: HttpResponse with temperature date in daily or weekly or monthly formats.
+        :exception: HttpResponseBadRequest if 'city' attribute is not in query params.
+        """
         if 'city' not in request.query_params:
             return HttpResponseBadRequest("API can support at most one city's weather data per request")
         api_response = super(WeatherDetailViewSet, self).list(request, *args, **kwargs)
@@ -148,10 +192,10 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
 class LocationViewSet(viewsets.ModelViewSet):
     """
     retrieve:
-        Return data for a pk
+        Return data for a pk.
 
     list:
-        Return list of cities with their data
+        Return list of cities with their data.
     """
     serializer_class = LocationSerializer
     ordering_fields = '__all__'
@@ -159,4 +203,8 @@ class LocationViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', ]
 
     def get_queryset(self, *args, **kwargs):
+        """
+        Returns rows from the model without filtering.
+        :return: queryset of Location objects.
+        """
         return models.Location.objects.all()
