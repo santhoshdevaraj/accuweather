@@ -9,6 +9,19 @@ class WeatherDetail(models.Model):
     tmax = models.IntegerField(null=True)
     tmin = models.IntegerField(null=True)
 
+    @staticmethod
+    def convert_fahrenheit_to_celsius(value):
+        """converts fahrenheit to celsius"""
+        return round((value - 32) * (5/9))
+
+    @property
+    def tmin_in_celsius(self):
+        return self.convert_fahrenheit_to_celsius(self.tmin)
+
+    @property
+    def tmax_in_celsius(self):
+        return self.convert_fahrenheit_to_celsius(self.tmax)
+
 
 class Location(models.Model):
     """Object representing the various cities"""

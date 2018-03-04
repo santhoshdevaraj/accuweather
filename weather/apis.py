@@ -2,7 +2,6 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 from django.http import HttpResponseBadRequest
-
 from django_filters import rest_framework as rest_filters
 from rest_framework import viewsets, serializers, response, status
 
@@ -24,19 +23,27 @@ class WeatherDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'date', 'tmax', 'tmin']
         model = models.WeatherDetail
 
+    def to_representation(self, instance, *args, **kwargs):
+        """Converts the instance to a serializable format"""
+        format = self.context['request'].query_params.get('temp_format', 'fahrenheit')
+        if format == 'celsius': instance.tmax, instance.tmin = instance.tmax_in_celsius, instance.tmin_in_celsius
+        return super(WeatherDetailSerializer, self).to_representation(instance, *args, **kwargs)
 
 class WeatherDetailFilterSet(rest_filters.FilterSet):
     """Custom filterset for WeatherDetail"""
+
     FREQUENCY_CHOICES = (('daily', 'Daily'), ('weekly', 'Weekly'), ('monthly', 'Monthly'))
     FORMAT_CHOICES = (('fahrenheit', 'Temperature in fahrenheit'), ('celsius', 'Temperature in celsius'))
 
-    frequency = rest_filters.ChoiceFilter(method='filter_frequency', choices=FREQUENCY_CHOICES,
-                                          help_text='daily/weekly/monthly. Default is daily')
+    frequency = rest_filters.ChoiceFilter(
+        method='filter_frequency', choices=FREQUENCY_CHOICES, help_text='daily/weekly/monthly. Default is daily'
+    )
     start_date = rest_filters.DateFilter(name='date', lookup_expr='gte', help_text='start date (e.g) 2017-06-24')
     end_date = rest_filters.DateFilter(name='date', lookup_expr='lte', help_text='end date (e.g) 2017-06-26')
     city = rest_filters.CharFilter(name='city', lookup_expr='exact', help_text='city name (e.g) BERKHOUT, NL')
-    temp_format = rest_filters.ChoiceFilter(method='filter_temp_format', choices=FORMAT_CHOICES,
-                                            help_text='fahrenheit/celsius. Default is fahrenheit')
+    temp_format = rest_filters.ChoiceFilter(
+        method='filter_temp_format', choices=FORMAT_CHOICES, help_text='fahrenheit/celsius. Default is fahrenheit'
+    )
 
     class Meta:
         model = models.WeatherDetail
