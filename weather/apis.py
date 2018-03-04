@@ -27,13 +27,14 @@ class WeatherDetailSerializer(serializers.ModelSerializer):
 
 class WeatherDetailFilterSet(rest_filters.FilterSet):
     """Custom filterset for WeatherDetail"""
-    frequency = rest_filters.CharFilter(method='filter_frequency')
-    start_date = rest_filters.DateFilter(name='date', lookup_expr='gte')
-    end_date = rest_filters.DateFilter(name='date', lookup_expr='lte')
+    frequency = rest_filters.CharFilter(method='filter_frequency', help_text='daily or weekly or monthly')
+    start_date = rest_filters.DateFilter(name='date', lookup_expr='gte', help_text='start date (e.g) 2017-06-24')
+    end_date = rest_filters.DateFilter(name='date', lookup_expr='lte', help_text='end date (e.g) 2017-06-26')
+    city = rest_filters.CharFilter(name='city', lookup_expr='exact', help_text='city name (e.g) BERKHOUT, NL')
 
     class Meta:
         model = models.WeatherDetail
-        fields = ['city', 'start_date', 'end_date']
+        fields = ['city', 'start_date', 'end_date', 'frequency']
 
     @staticmethod
     def filter_frequency(queryset, name, value):
