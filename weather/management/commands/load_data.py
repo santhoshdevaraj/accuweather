@@ -32,10 +32,11 @@ class Command(BaseCommand):
     @staticmethod
     def create_locations(data):
         """Create the location object ie station or city"""
-        stations, cities = {row[0] for row in data}, {row[1] for row in data}
+        stations, cities = {row[0] for row in data}, {(row[1], row[2], row[3], row[4]) for row in data}
         locations = (
             [models.Location(name=station, type_id='station') for station in stations] +
-            [models.Location(name=city, type_id='city') for city in cities]
+            [models.Location(name=city, type_id='city', latitude=latitude, longitude=longitude, elevation=elevation)
+                for city_data in cities for (city, latitude, longitude, elevation) in (city_data,)]
         )
         return models.Location.objects.bulk_create(locations)
 
@@ -44,8 +45,7 @@ class Command(BaseCommand):
         """Create the weather detail object in the DB"""
         weather_detail = [
             models.WeatherDetail(
-                station_id=row[0], city_id=row[1], latitude=row[2], longitude=row[3], elevation=row[4],
-                date=row[5], tmax=row[6] or None, tmin=row[7] or None
+                station_id=row[0], city_id=row[1], date=row[5], tmax=row[6] or None, tmin=row[7] or None
             ) for row in data
         ]
         return models.WeatherDetail.objects.bulk_create(weather_detail)
