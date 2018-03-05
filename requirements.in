@@ -1,3 +1,4 @@
+factory-boy
 Django
 djangorestframework
 django-filter

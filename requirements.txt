@@ -22,3 +22,5 @@ requests==2.18.4          # via coreapi
 simplejson==3.13.2        # via django-rest-swagger
 uritemplate==3.0.0        # via coreapi
 urllib3==1.22             # via requests
+factory-boy==2.8.1
+faker==0.7.12             # via factory-boy
