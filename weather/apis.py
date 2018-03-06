@@ -20,7 +20,7 @@ class WeatherDetailSerializer(serializers.ModelSerializer):
     """Serializer for WeatherDetail model."""
 
     class Meta:
-        fields = ['id', 'city', 'date', 'tmax', 'tmin']
+        fields = ['id', 'date', 'tmax', 'tmin']
         model = models.WeatherDetail
 
     def to_representation(self, instance, *args, **kwargs):
@@ -83,84 +83,69 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
         return models.WeatherDetail.objects.all()
 
     @staticmethod
-    def get_year_month_week(date_object):
+    def get_start_of_week_and_month(date_object):
         """
-        Given a date object returns the year, month and start of week
+        Given a date object returns start of week and month
         :param date_object: DateTime object
-        :return: Returns a tuple of (year e.g 2016, month e.g 'September', first day of week e.g '2016-09-29')
+        :return: Returns a tuple of (first day of week e.g '2016-09-29', first day of month e.g '2016-09-01')
         """
         return (
-            date_object.year,
-            date_object.strftime('%B'),
-            (date_object - timedelta(days=date_object.weekday())).strftime('%Y-%m-%d')
+            (date_object - timedelta(days=date_object.weekday())).strftime('%Y-%m-%d'),
+            (date_object.replace(day=1)).strftime('%Y-%m-%d')
         )
 
     @staticmethod
-    def create_data_map(data, data_map, frequency):
+    def get_total_min_and_max_temps(data, frequency):
         """
-        :param data: HttpResponse.data ie a list of maps of temperatures over days between a range
-        :param data_map: Defaultdict with (0, 0, 0, 0) as default value.
+        Computes the total min and max temperatures for each week or month.
+        :param data: data ie a list of maps of temperatures over days between a range
         :param frequency: Frequency requested ie weekly or monthly.
-        :return: Map of (year, period) as key and (total_tmax, total_tmin, days_tmax, days_tmin) as value where period
-                is either monthly or weekly depending on frequency
+        :return: Map of start_date as key and (total_tmax, total_tmin, days_tmax, days_tmin) as value, where start_date
+        is either start of week or month depending on frequency.
         """
+        dates_and_temps = defaultdict(lambda: (0, 0, 0, 0))
+
         for row in data:
             current_date, tmax, tmin = row['date'], row['tmax'], row['tmin']
-            year, month, week = WeatherDetailViewSet.get_year_month_week(datetime.strptime(current_date, '%Y-%m-%d'))
-            key = (year, month) if frequency == 'month' else (year, week)
-
-            tmax_total, tmin_total, max_days, min_days = data_map[key]
-            data_map[key] = (
+            start_of_week, start_of_month = \
+                WeatherDetailViewSet.get_start_of_week_and_month(datetime.strptime(current_date, '%Y-%m-%d'))
+            key = start_of_week if frequency == 'weekly' else start_of_month
+            tmax_total, tmin_total, max_days, min_days = dates_and_temps[key]
+            dates_and_temps[key] = (
                 tmax_total+tmax if tmax else tmax_total,
                 tmin_total+tmin if tmin else tmin_total,
                 max_days+1 if tmax else max_days,
                 min_days+1 if tmin else min_days
             )
-        return data_map
+        return dates_and_temps
 
-    def get_response(self, data_map, frequency):
+    def get_avg_min_and_max_temps(self, dates_and_temps):
         """
-        Creates the response, based on the frequency selected.
-        :param data_map: Map of (year, frequency) as key and (total_tmax, total_tmin, days_tmax, days_tmin) as value.
-        :param frequency: Frequency requested ie weekly or monthly.
-        :return: Computes the average of tmax and tmin for each period and returns a map of {year, period, avg_max,
-                avg_min}. (e.g) when frequency is 'monthly', {year: 2016, month: 'September', avg_max: 20,
-                avg_min: 30}. When frequency is 'weekly', {year: 2016, week: '2016-09-29', avg_max: 20, avg_min: 30}
+        Computes the average min and max temperatures for each week or month.
+        :param dates_and_temps: Map of start_date as key and (total_tmax, total_tmin, days_tmax, days_tmin) as value.
+        :return: List of maps of start_date and computed average for that period
         """
         data = []
 
-        for key in data_map:
-            total_tmax, total_tmin, max_days, min_days, year, freq_value = *data_map[key], *key
+        for key in dates_and_temps:
+            total_tmax, total_tmin, max_days, min_days = dates_and_temps[key]
             data.append({
-                'year': year,
-                frequency: freq_value,
-                "avg_max": round(total_tmax / max_days) if max_days else "N/A",
-                "avg_min": round(total_tmin / min_days) if min_days else "N/A"
+                "date": key,
+                "tmax": round(total_tmax / max_days) if max_days else "N/A",
+                "tmin": round(total_tmin / min_days) if min_days else "N/A"
             })
 
         return data
 
-    def create_weekly_response(self, response, frequency):
+    def get_updated_response(self, data, frequency):
         """
-        Updates the response with the year, week and average for that week.
-        :param response: HttpResponse object with temperature data given in daily format over the chosen range.
-        :param frequency: Frequency requested ie 'weekly'.
-        :return: A list of map of {year, period, avg_max, avg_min} for each period in the date range, where period
-                is the first day of each week for the date range.
+        Calculates the average of temperatures for each period in the range based on frequency.
+        :param data: List of map of temperature data given in daily format over the chosen range.
+        :param frequency: Frequency requested e.g 'monthly'.
+        :return: List of maps of start_date and computed average for that period.
         """
-        data_map = self.create_data_map(response.data, defaultdict(lambda: (0, 0, 0, 0)), frequency)
-        return self.get_response(data_map, frequency)
-
-    def create_monthly_response(self, response, frequency):
-        """
-        Updates the response with the year, month and average for that month.
-        :param response: HttpResponse object with temperature data given in daily format over the chosen range.
-        :param frequency: Frequency requested ie 'monthly'.
-        :return: A list of map of {year, period, avg_max, avg_min} for each period in the date range, where period
-                is each month for the date range.
-        """
-        data_map = self.get_data_map(response.data, defaultdict(lambda : (0, 0, 0, 0)), frequency)
-        return self.get_response(data_map, frequency)
+        dates_and_temps = self.get_total_min_and_max_temps(data, frequency)
+        return self.get_avg_min_and_max_temps(dates_and_temps)
 
     def update_for_frequency(self, response, request):
         """
@@ -169,12 +154,8 @@ class WeatherDetailViewSet(viewsets.ModelViewSet):
         :param request: HttpRequest object from the client.
         :return: HttpResponse object with temperature data averaged based on the frequency in incoming request.
         """
-        frequency = request.query_params.get('frequency', None)
-        if frequency == 'weekly':
-            return self.create_weekly_response(response, 'week')
-        elif frequency == 'monthly':
-            return self.create_monthly_response(response, 'month')
-        return response.data
+        frequency = request.query_params.get('frequency', 'daily')
+        return response.data if frequency == 'daily' else self.get_updated_response(response.data, frequency)
 
     def list(self, request, *args, **kwargs):
         """
